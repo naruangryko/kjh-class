@@ -308,9 +308,8 @@ textarea.form-input{resize:vertical;min-height:90px}
   </div>
   <div class="card" id="sheet-card" style="margin-top:8px;display:none">
     <div class="card-title">구글 시트 연동</div>
-    <div style="font-size:13px;margin-bottom:12px;color:var(--muted)"><span class="status-dot status-wait" id="conn-dot"></span><span id="conn-status">연동 URL을 설정해 주세요</span></div>
-    <div class="form-row" style="margin-bottom:8px"><label class="form-label">Apps Script 웹 앱 URL</label><input class="form-input" id="sheet-url" placeholder="https://script.google.com/macros/s/AKfycbzoeW3xrhaSIJHWBFW6wkkhdfYB2MXxiu1WIe2A4YgyZBUOKnbEVMuR8iXs8Aj_fDeVCQ/exec" style="font-size:12px" onblur="saveSheetUrl()"></div>
-    <div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="testSheetConnection()">연결 테스트</button><button class="btn btn-ghost btn-sm" onclick="toggleHint()">📖 설정 방법</button></div>
+    <div style="font-size:13px;margin-bottom:12px;color:var(--muted)"><span class="status-dot status-wait" id="conn-dot"></span><span id="conn-status">연결 확인 중...</span></div>
+    <button class="btn btn-primary btn-sm" onclick="testSheetConnection()">연결 테스트</button>
     <div id="sheet-hint" style="display:none;margin-top:12px">
       <div style="background:var(--surface2);border:1px dashed var(--border);border-radius:8px;padding:14px;font-size:12px;color:var(--muted);line-height:1.9">
         <b style="color:var(--text)">구글 시트 → Apps Script 연동</b><br><br>
@@ -437,6 +436,7 @@ function out(o){
 <script>
 /* ── 상태 ── */
 let isAdmin = false;
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzoeW3xrhaSIJHWBFW6wkkhdfYB2MXxiu1WIe2A4YgyZBUOKnbEVMuR8iXs8Aj_fDeVCQ/exec';
 let adminPw = 'kjh2026';
 let subjects = ['전체','정보(1)','인공지능기초(2)','인공지능기초(3)','기타'];
 let currentFilter = '전체';
@@ -473,7 +473,6 @@ async function loadConfig() {
       const d = snap.data();
       if (d.subjects)  subjects = d.subjects;
       if (d.adminPw)   adminPw  = d.adminPw;
-      if (d.sheetUrl)  document.getElementById('sheet-url').value = d.sheetUrl;
     }
   } catch(e) { console.warn('설정 불러오기 실패', e); }
 }
@@ -486,10 +485,7 @@ async function saveConfig(patch) {
 
 function saveSubjects() { saveConfig({ subjects }); }
 function saveAdminPw(pw) { saveConfig({ adminPw: pw }); }
-function saveSheetUrl() {
-  const url = document.getElementById('sheet-url').value.trim();
-  if (url) saveConfig({ sheetUrl: url });
-}
+
 
 
 function listenPosts() {
@@ -801,7 +797,7 @@ async function checkGrade(){
   const alertEl=document.getElementById('g-alert');
   const result=document.getElementById('grade-result');
   if(!id||!pw){alertEl.innerHTML='<div class="alert alert-error">학번과 비밀번호를 입력하세요.</div>';return;}
-  const url=document.getElementById('sheet-url').value.trim();
+  const url=SHEET_URL;
   if(url){
     const btn=document.getElementById('grade-btn');
     btn.disabled=true;btn.innerHTML='<span class="spinner"></span>조회 중...';
@@ -839,9 +835,7 @@ function showGradeResult(name,subject,scores){
 }
 function logoutGrade(){document.getElementById('grade-result').style.display='none';document.getElementById('g-id').value='';document.getElementById('g-pw').value='';document.getElementById('g-alert').innerHTML='';}
 async function testSheetConnection(){
-  const url=document.getElementById('sheet-url').value.trim();
-  if(!url){alert('URL을 입력하세요.');return;}
-  saveSheetUrl();
+  const url=SHEET_URL;
   const dot=document.getElementById('conn-dot');const status=document.getElementById('conn-status');
   dot.className='status-dot status-wait';status.innerHTML='<span class="spinner"></span>연결 테스트 중...';
   try{await fetch(`${url}?id=test&pw=test`,{mode:'cors'});dot.className='status-dot status-ok';status.textContent='연결 성공!';}
