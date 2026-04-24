@@ -4,7 +4,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import {
     getFirestore, collection, addDoc, getDocs, deleteDoc,
-    doc, onSnapshot, orderBy, query, updateDoc, arrayUnion, arrayRemove, getDoc
+    doc, onSnapshot, orderBy, query, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -20,7 +20,7 @@
   const db = getFirestore(app);
 
   window._db = db;
-  window._fs = { collection, addDoc, getDocs, deleteDoc, doc, onSnapshot, orderBy, query, updateDoc, arrayUnion, arrayRemove, getDoc };
+  window._fs = { collection, addDoc, getDocs, deleteDoc, doc, onSnapshot, orderBy, query, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc };
 
   // 앱 초기화 (Firebase 로드 완료 후 실행)
   window.addEventListener('DOMContentLoaded', () => {
@@ -306,7 +306,7 @@ textarea.form-input{resize:vertical;min-height:90px}
     <div id="grade-sections"></div>
     <button class="btn btn-ghost btn-sm" style="margin-top:14px" onclick="logoutGrade()">닫기</button>
   </div>
-  <div class="card" style="margin-top:8px">
+  <div class="card" id="sheet-card" style="margin-top:8px;display:none">
     <div class="card-title">구글 시트 연동</div>
     <div style="font-size:13px;margin-bottom:12px;color:var(--muted)"><span class="status-dot status-wait" id="conn-dot"></span><span id="conn-status">연동 URL을 설정해 주세요</span></div>
     <div class="form-row" style="margin-bottom:8px"><label class="form-label">Apps Script 웹 앱 URL</label><input class="form-input" id="sheet-url" placeholder="https://script.google.com/macros/s/...../exec" style="font-size:12px"></div>
@@ -457,14 +457,32 @@ function fs(){ return window._fs; }
 
 /* ── 앱 초기화 ── */
 window._appInit = function() {
-  renderAllSubjectSelects();
-  renderBoardFilter();
+  loadSubjects().then(() => {
+    renderAllSubjectSelects();
+    renderBoardFilter();
+  });
   renderCalendar();
   listenPosts();
   listenEvents();
 };
 
-/* ── Firestore 실시간 리스너 ── */
+/* ── 과목 Firestore 저장/불러오기 ── */
+async function loadSubjects() {
+  try {
+    const snap = await fs().getDoc(fs().doc(db(), 'settings', 'subjects'));
+    if (snap.exists() && snap.data().list) {
+      subjects = snap.data().list;
+    }
+  } catch(e) { console.warn('과목 불러오기 실패', e); }
+}
+
+async function saveSubjects() {
+  try {
+    await fs().setDoc(fs().doc(db(), 'settings', 'subjects'), { list: subjects }, { merge: true });
+  } catch(e) { console.warn('과목 저장 실패', e); }
+}
+
+
 function listenPosts() {
   const q = fs().query(fs().collection(db(), 'posts'), fs().orderBy('date', 'desc'));
   fs().onSnapshot(q, (snapshot) => {
@@ -535,6 +553,8 @@ function applyAdminUI(){
   // 달력
   document.getElementById('cal-admin-badge').style.display=isAdmin?'inline':'none';
   document.getElementById('btn-add-event').style.display=isAdmin?'inline-flex':'none';
+  // 성적 - 구글시트 연동 카드
+  document.getElementById('sheet-card').style.display=isAdmin?'block':'none';
   renderPosts();
   renderCalendar();
 }
@@ -553,6 +573,7 @@ function addSubject(){
   renderSubjectChips();
   renderAllSubjectSelects();
   renderBoardFilter();
+  saveSubjects();
 }
 function removeSubject(idx){
   if(subjects[idx]==='전체'){return;}
@@ -561,6 +582,7 @@ function removeSubject(idx){
   renderSubjectChips();
   renderAllSubjectSelects();
   renderBoardFilter();
+  saveSubjects();
 }
 function renderAllSubjectSelects(){
   ['w-subject','ev-subject'].forEach(id=>{
