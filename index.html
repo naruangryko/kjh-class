@@ -1,0 +1,832 @@
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, getDocs, deleteDoc,
+    doc, onSnapshot, orderBy, query, updateDoc, arrayUnion, arrayRemove, getDoc
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDRXixugKLQa9hboQf6t8RgysmFqtlaI8k",
+    authDomain: "kjh-class-bf02b.firebaseapp.com",
+    projectId: "kjh-class-bf02b",
+    storageBucket: "kjh-class-bf02b.firebasestorage.app",
+    messagingSenderId: "294483306842",
+    appId: "1:294483306842:web:8399b8b18dc084406ceb63"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window._db = db;
+  window._fs = { collection, addDoc, getDocs, deleteDoc, doc, onSnapshot, orderBy, query, updateDoc, arrayUnion, arrayRemove, getDoc };
+
+  // 앱 초기화 (Firebase 로드 완료 후 실행)
+  window.addEventListener('DOMContentLoaded', () => {
+    if (window._appInit) window._appInit();
+  });
+  // DOMContentLoaded가 이미 지난 경우
+  if (document.readyState !== 'loading' && window._appInit) window._appInit();
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--surface:#1a1d27;--surface2:#222535;--surface3:#2a2e42;
+  --accent:#4f8ef7;--green:#2ecc8a;--red:#e05c5c;--amber:#f5a623;--pink:#f472b6;
+  --text:#e8eaf0;
+  --muted:#f5e09a; /* 파스텔 노랑 — 작은 글씨용 */
+  --text3:#888daa;
+  --border:#2e3248;--radius:12px;
+}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.6}
+
+/* NAV */
+nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;position:sticky;top:0;z-index:100;display:flex;align-items:center;height:56px;gap:0}
+.nav-brand{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:15px;color:var(--accent);margin-right:auto;white-space:nowrap;letter-spacing:.04em}
+.nav-brand span{color:var(--muted)}
+.nav-tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.nav-tabs::-webkit-scrollbar{display:none}
+.tab{padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--muted);white-space:nowrap;border:none;background:none;transition:.15s;font-family:inherit}
+.tab:hover{background:var(--surface2);color:var(--text)}
+.tab.active{background:var(--accent);color:#fff;font-weight:500}
+
+/* ADMIN BADGE */
+.admin-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;background:#1a2e3a;color:var(--pink);border:1px solid #3a2050;border-radius:20px;padding:2px 10px;margin-left:8px}
+
+/* PAGES */
+.page{display:none;padding:20px;max-width:900px;margin:0 auto;animation:fadeIn .22s}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:13px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title::before{content:'';width:3px;height:14px;background:var(--accent);border-radius:2px;flex-shrink:0}
+
+/* SECTION HEADER */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.section-title{font-size:20px;font-weight:700}
+.section-sub{font-size:13px;color:var(--muted);margin-top:2px}
+
+/* FORMS */
+.write-form{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:16px}
+.form-row{margin-bottom:12px}
+.form-label{font-size:12px;color:var(--muted);margin-bottom:5px;display:block}
+.form-input{width:100%;background:var(--surface3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:14px;font-family:inherit;transition:.15s;outline:none}
+.form-input:focus{border-color:var(--accent)}
+textarea.form-input{resize:vertical;min-height:90px}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.form-row-2{grid-template-columns:1fr}}
+
+/* BUTTONS */
+.btn{padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;transition:.15s}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#3a7ae0}
+.btn-pink{background:var(--pink);color:#1a0020}.btn-pink:hover{background:#e055a0}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}.btn-ghost:hover{background:var(--surface2);color:var(--text)}
+.btn-danger{background:var(--red);color:#fff;font-size:11px;padding:3px 8px;border-radius:6px}.btn-danger:hover{background:#c04040}
+.btn-icon{background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;transition:.12s;font-size:16px;color:var(--pink)}.btn-icon:hover{background:var(--surface2)}
+
+/* BADGES */
+.badge{display:inline-block;font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.badge-notice{background:#1a3a6e;color:#6fa8f5}
+.badge-qna{background:#1e2f1e;color:#4caf7d}
+.subject-tag{display:inline-block;font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px;margin-right:4px}
+.tag-0{background:#1a2a4e;color:#6fa8f5}
+.tag-1{background:#1e2a1e;color:#4caf7d}
+.tag-2{background:#2a1a2e;color:#c084f5}
+.tag-3{background:#2a1a10;color:#f5a623}
+.tag-4{background:#1a2a2a;color:#5dd8d8}
+.tag-5{background:#2a1a1a;color:#f08080}
+
+/* BOARD */
+.post-list{list-style:none}
+.post-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:.12s;flex-wrap:wrap;position:relative}
+.post-item:hover{background:var(--surface2);margin:0 -20px;padding:11px 20px;border-radius:8px;border-color:transparent}
+.post-item:last-child{border-bottom:none}
+.post-notice{background:var(--surface2);margin:0 -20px;padding:11px 20px;border-radius:8px;border-left:3px solid var(--accent);border-bottom:none;margin-bottom:4px}
+.post-title{flex:1;font-size:14px;min-width:100px}
+.post-meta{font-size:12px;color:var(--muted);white-space:nowrap}
+.post-actions{display:flex;gap:4px;margin-left:4px}
+
+/* POST DETAIL */
+.post-detail{display:none}.post-detail.show{display:block}
+.post-detail-header{border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:14px}
+.post-detail-title{font-size:17px;font-weight:500;margin-bottom:6px}
+.post-detail-meta{font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+.post-detail-body{font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap;min-height:60px}
+.comment-area{margin-top:20px;border-top:1px solid var(--border);padding-top:16px}
+.comment-item{background:var(--surface2);border-radius:8px;padding:10px 14px;margin-bottom:8px;position:relative}
+.comment-header{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px}
+.comment-body{font-size:13px}
+
+/* FILTER */
+.subject-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.filter-btn{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;transition:.12s}
+.filter-btn:hover{background:var(--surface2)}
+.filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* CALENDAR */
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.cal-month{font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent)}
+.btn-cal-nav{background:var(--pink);color:#1a0020;border:none;border-radius:8px;width:34px;height:34px;font-size:18px;font-weight:700;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center}
+.btn-cal-nav:hover{background:#e040a0;color:#fff}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-day-label{text-align:center;font-size:11px;font-weight:500;color:var(--muted);padding:4px 0}
+.cal-day-label:first-child{color:#f07070}
+.cal-day-label:last-child{color:#6fa8f5}
+.cal-cell{min-height:66px;background:var(--surface2);border-radius:8px;padding:6px;position:relative;transition:.12s}
+.cal-cell:hover{background:var(--surface3)}
+.cal-cell.empty{background:transparent}
+.cal-cell.today{border:1px solid var(--accent)}
+.cal-cell.sun .cal-num{color:#f07070}
+.cal-cell.sat .cal-num{color:#6fa8f5}
+.cal-num{font-size:12px;font-weight:600;margin-bottom:2px;color:var(--text)}
+.cal-event{font-size:10px;background:var(--accent);color:#fff;border-radius:4px;padding:1px 4px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5;cursor:pointer}
+.cal-event.green{background:var(--green);color:#0a2a18}
+.cal-event.amber{background:var(--amber);color:#1a1000}
+.cal-event.red{background:var(--red)}
+.cal-event.pink{background:var(--pink);color:#1a0020}
+.event-item{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.event-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.event-date{font-size:11px;color:var(--muted);white-space:nowrap;min-width:52px}
+.event-del{margin-left:auto;display:none}
+
+/* GRADE */
+.grade-table{width:100%;border-collapse:collapse;font-size:13px}
+.grade-table th{background:var(--surface2);color:var(--muted);font-weight:500;padding:9px 12px;text-align:left;border-bottom:1px solid var(--border)}
+.grade-table td{padding:9px 12px;border-bottom:1px solid var(--border)}
+.grade-table tr:last-child td{border-bottom:none}
+.grade-score{font-weight:700;font-family:'JetBrains Mono',monospace}
+.grade-score.high{color:var(--green)}.grade-score.mid{color:var(--amber)}.grade-score.low{color:var(--red)}
+.grade-rank{display:inline-block;background:var(--surface2);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-top:10px}
+.alert-error{background:#2a1010;border:1px solid #5a2020;color:#f07070}
+.alert-success{background:#0a2a18;border:1px solid #1a5a30;color:#4cdd90}
+.alert-info{background:#1a2a40;border:1px solid #2a4a70;color:#7ab8f5}
+
+/* ADMIN PANEL */
+.admin-panel{background:#1a1020;border:1px solid #3a2050;border-radius:var(--radius);padding:16px;margin-bottom:16px}
+.admin-panel-title{font-size:13px;font-weight:600;color:var(--pink);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.subject-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:12px;background:var(--surface2);border:1px solid var(--border);margin:3px}
+.chip-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0 0 0 2px;line-height:1}
+.chip-del:hover{color:var(--red)}
+.mono{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px}
+.code-block{background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#a8d0ff;line-height:1.8;margin:8px 0;overflow-x:auto;white-space:pre}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:5px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.status-ok{background:var(--green)}.status-err{background:var(--red)}.status-wait{background:var(--amber)}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0 4px}
+
+@media(max-width:600px){.cal-cell{min-height:44px;padding:4px}.cal-event{display:none}.cal-cell.has-event::after{content:'●';color:var(--accent);font-size:10px;position:absolute;bottom:2px;left:50%;transform:translateX(-50%)}}
+</style>
+
+<nav>
+  <div class="nav-brand">KJH <span>CLASS</span></div>
+  <div class="nav-tabs">
+    <button class="tab active" onclick="showPage('board',this)">📋 게시판</button>
+    <button class="tab" onclick="showPage('calendar',this)">📅 일정</button>
+    <button class="tab" onclick="showPage('grade',this)">📊 성적 확인</button>
+    <button class="tab" onclick="showPage('admin',this)" id="admin-tab" style="color:var(--pink)">🔑 관리자</button>
+  </div>
+</nav>
+
+<!-- ───── 게시판 ───── -->
+<div class="page active" id="page-board">
+  <div class="section-header">
+    <div><div class="section-title">게시판 <span id="board-admin-badge" style="display:none"><span class="admin-badge">🔑 관리자 모드</span></span></div>
+    <div class="section-sub">회원가입 없이 질문·의견 작성 가능</div></div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-primary btn-sm" id="btn-write-post" onclick="toggleWrite('post')" style="display:none">📌 공지 작성</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleWrite('qna')">✏️ 글쓰기</button>
+    </div>
+  </div>
+
+  <div class="write-form" id="write-form" style="display:none">
+    <div id="write-notice-row" style="display:none;margin-bottom:10px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer">
+        <input type="checkbox" id="w-is-notice" style="accent-color:var(--accent)"> 공지로 등록 (상단 고정)
+      </label>
+    </div>
+    <div class="form-row-2">
+      <div class="form-row" style="margin:0"><label class="form-label">닉네임</label><input class="form-input" id="w-name" placeholder="예: 3반 김민준"></div>
+      <div class="form-row" style="margin:0" id="w-pw-row"><label class="form-label">비밀번호 (수정·삭제용)</label><input class="form-input" id="w-pw" type="password" placeholder="숫자 4자리"></div>
+    </div>
+    <div class="form-row" style="margin-top:10px">
+      <label class="form-label">과목</label>
+      <select class="form-input" id="w-subject"></select>
+    </div>
+    <div class="form-row"><label class="form-label">제목</label><input class="form-input" id="w-title" placeholder="제목을 입력하세요"></div>
+    <div class="form-row"><label class="form-label">내용</label><textarea class="form-input" id="w-body" placeholder="내용을 작성하세요"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('write-form').style.display='none'">취소</button>
+      <button class="btn btn-primary btn-sm" onclick="submitPost()">등록</button>
+    </div>
+  </div>
+
+  <div class="card" id="board-list-area">
+    <div class="subject-filter" id="board-filter"></div>
+    <ul class="post-list" id="post-list"></ul>
+  </div>
+
+  <div class="post-detail" id="post-detail">
+    <button class="btn btn-ghost btn-sm" onclick="closePost()" style="margin-bottom:12px">← 목록으로</button>
+    <div class="card">
+      <div class="post-detail-header">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="post-detail-title" id="detail-title"></div>
+          <button class="btn btn-danger" id="detail-del-btn" onclick="deleteCurrentPost()" style="display:none;margin-left:10px;flex-shrink:0">삭제</button>
+        </div>
+        <div class="post-detail-meta"><span id="detail-author"></span><span id="detail-date"></span><span id="detail-badge"></span><span id="detail-subject"></span></div>
+      </div>
+      <div class="post-detail-body" id="detail-body"></div>
+      <div class="comment-area">
+        <div class="card-title" style="margin-bottom:10px">댓글</div>
+        <div id="comment-list"></div>
+        <div class="write-form" style="margin-top:10px">
+          <div class="form-row-2">
+            <div class="form-row" style="margin:0"><input class="form-input" id="c-name" placeholder="닉네임"></div>
+            <div class="form-row" style="margin:0"><input class="form-input" id="c-body" placeholder="댓글 내용"></div>
+          </div>
+          <div style="text-align:right;margin-top:8px"><button class="btn btn-primary btn-sm" onclick="submitComment()">댓글 등록</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ───── 달력 ───── -->
+<div class="page" id="page-calendar">
+  <div class="section-header">
+    <div><div class="section-title">학사 일정 <span id="cal-admin-badge" style="display:none"><span class="admin-badge">🔑 관리자 모드</span></span></div>
+    <div class="section-sub">수업·과제·시험 일정</div></div>
+    <button class="btn btn-pink btn-sm" id="btn-add-event" onclick="openEventModal()" style="display:none">+ 일정 추가</button>
+  </div>
+  <div class="card">
+    <div class="cal-header">
+      <button class="btn-cal-nav" onclick="changeMonth(-1)">‹</button>
+      <div class="cal-month" id="cal-month-label"></div>
+      <button class="btn-cal-nav" onclick="changeMonth(1)">›</button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">이번 달 일정</div>
+    <div id="event-list"></div>
+  </div>
+</div>
+
+<!-- ───── 성적 ───── -->
+<div class="page" id="page-grade">
+  <div class="section-header">
+    <div><div class="section-title">성적 확인</div><div class="section-sub">학번 + 비밀번호로 본인 성적 조회</div></div>
+  </div>
+  <div style="max-width:360px;margin:0 auto">
+    <div class="card">
+      <div class="card-title">성적 조회</div>
+      <div class="form-row"><label class="form-label">학번</label><input class="form-input" id="g-id" placeholder="예: 30712" maxlength="10"></div>
+      <div class="form-row"><label class="form-label">비밀번호</label><input class="form-input" id="g-pw" type="password" placeholder="선생님이 알려준 비밀번호" onkeydown="if(event.key==='Enter')checkGrade()"></div>
+      <button class="btn btn-primary" style="width:100%" onclick="checkGrade()" id="grade-btn">조회하기</button>
+      <div id="g-alert"></div>
+    </div>
+  </div>
+  <div class="card" id="grade-result" style="display:none">
+    <div class="card-title">성적표</div>
+    <div id="grade-name-row" style="margin-bottom:14px;font-size:15px;font-weight:500"></div>
+    <div id="grade-sections"></div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:14px" onclick="logoutGrade()">닫기</button>
+  </div>
+  <div class="card" style="margin-top:8px">
+    <div class="card-title">구글 시트 연동</div>
+    <div style="font-size:13px;margin-bottom:12px;color:var(--muted)"><span class="status-dot status-wait" id="conn-dot"></span><span id="conn-status">연동 URL을 설정해 주세요</span></div>
+    <div class="form-row" style="margin-bottom:8px"><label class="form-label">Apps Script 웹 앱 URL</label><input class="form-input" id="sheet-url" placeholder="https://script.google.com/macros/s/...../exec" style="font-size:12px"></div>
+    <div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="testSheetConnection()">연결 테스트</button><button class="btn btn-ghost btn-sm" onclick="toggleHint()">📖 설정 방법</button></div>
+    <div id="sheet-hint" style="display:none;margin-top:12px">
+      <div style="background:var(--surface2);border:1px dashed var(--border);border-radius:8px;padding:14px;font-size:12px;color:var(--muted);line-height:1.9">
+        <b style="color:var(--text)">구글 시트 → Apps Script 연동</b><br><br>
+        <b style="color:var(--text)">① 시트 구조 (Sheet1)</b>
+        <div class="code-block">A: 학번 | B: 비번 | C: 이름 | D: 과목
+E열~: 항목명 / 점수 / 만점  (3열 세트 반복)</div>
+        <b style="color:var(--text)">② Apps Script</b>
+        <div class="code-block">function doGet(e) {
+  const id=e.parameter.id, pw=e.parameter.pw;
+  const s=SpreadsheetApp.getActiveSpreadsheet()
+           .getSheetByName("Sheet1");
+  const d=s.getDataRange().getValues();
+  const h=d[0];
+  for(let i=1;i&lt;d.length;i++){
+    if(String(d[i][0])===id &amp;&amp; String(d[i][1])===pw){
+      const sc=[];
+      for(let j=4;j&lt;h.length;j+=3)
+        if(h[j]) sc.push({label:h[j],score:d[i][j+1],total:d[i][j+2]});
+      return out({ok:true,name:d[i][2],subject:d[i][3],scores:sc});
+    }
+  }
+  return out({ok:false});
+}
+function out(o){
+  return ContentService.createTextOutput(JSON.stringify(o))
+    .setMimeType(ContentService.MimeType.JSON);
+}</div>
+        ③ 배포 → 새 배포 → 웹 앱 → 액세스: <span class="mono">모든 사용자</span> → URL 복사
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ───── 관리자 ───── -->
+<div class="page" id="page-admin">
+  <div class="section-header">
+    <div><div class="section-title">관리자</div><div class="section-sub">로그인 후 게시판·일정 관리 가능</div></div>
+  </div>
+
+  <!-- 로그인 전 -->
+  <div id="admin-login-area" style="max-width:360px;margin:0 auto">
+    <div class="card">
+      <div class="card-title">관리자 로그인</div>
+      <div class="form-row"><label class="form-label">관리자 비밀번호</label>
+        <input class="form-input" id="admin-pw-input" type="password" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')doAdminLogin()">
+      </div>
+      <button class="btn btn-pink" style="width:100%" onclick="doAdminLogin()">로그인</button>
+      <div id="admin-login-msg"></div>
+      <div style="margin-top:14px;font-size:12px;color:var(--muted);background:var(--surface2);border-radius:8px;padding:10px">
+        기본 비밀번호: <span class="mono">kjh2026</span><br>
+        아래 설정에서 변경 가능합니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 로그인 후 -->
+  <div id="admin-panel-area" style="display:none">
+    <div class="admin-panel">
+      <div class="admin-panel-title">🔑 관리자 설정</div>
+
+      <!-- 비밀번호 변경 -->
+      <div class="form-row">
+        <label class="form-label">관리자 비밀번호 변경</label>
+        <div class="form-row-2">
+          <input class="form-input" id="new-pw1" type="password" placeholder="새 비밀번호">
+          <input class="form-input" id="new-pw2" type="password" placeholder="새 비밀번호 확인">
+        </div>
+        <button class="btn btn-pink btn-sm" style="margin-top:8px" onclick="changeAdminPw()">변경</button>
+        <div id="pw-change-msg"></div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+
+      <!-- 과목 관리 -->
+      <div class="form-row" style="margin:0">
+        <label class="form-label">과목 관리 (추가·삭제)</label>
+        <div id="subject-chips" style="margin-bottom:10px"></div>
+        <div style="display:flex;gap:8px">
+          <input class="form-input" id="new-subject-input" placeholder="새 과목명" style="max-width:180px">
+          <button class="btn btn-primary btn-sm" onclick="addSubject()">추가</button>
+        </div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+
+      <button class="btn btn-ghost btn-sm" onclick="doAdminLogout()" style="color:var(--red);border-color:var(--red)">로그아웃</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">관리자 안내</div>
+      <ul style="font-size:13px;color:var(--muted);line-height:2;padding-left:4px">
+        <li>✅ 게시판 → 공지 작성 버튼 활성화 + 모든 글·댓글 삭제 가능</li>
+        <li>✅ 일정 탭 → 일정 추가·삭제 버튼 활성화</li>
+        <li>✅ 다른 탭으로 이동해도 로그인 상태 유지</li>
+        <li>✅ 과목은 이 페이지에서 자유롭게 추가·삭제</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- 일정 모달 -->
+<div class="modal-overlay" id="event-modal">
+  <div class="modal">
+    <div class="modal-title">일정 추가 <button class="modal-close" onclick="closeEventModal()">×</button></div>
+    <div class="form-row"><label class="form-label">날짜</label><input class="form-input" type="date" id="ev-date"></div>
+    <div class="form-row"><label class="form-label">제목</label><input class="form-input" id="ev-title" placeholder="예: 1차 지필평가"></div>
+    <div class="form-row"><label class="form-label">과목</label><select class="form-input" id="ev-subject"></select></div>
+    <div class="form-row"><label class="form-label">종류</label>
+      <select class="form-input" id="ev-color">
+        <option value="">수업/일반 (파랑)</option>
+        <option value="green">과제 마감 (초록)</option>
+        <option value="amber">시험/평가 (주황)</option>
+        <option value="red">중요 공지 (빨강)</option>
+        <option value="pink">관리자 공지 (핑크)</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeEventModal()">취소</button>
+      <button class="btn btn-pink" onclick="addEvent()">추가</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── 상태 ── */
+let isAdmin = false;
+let adminPw = 'kjh2026';
+let subjects = ['전체','프로그래밍','정보','수학','기타'];
+let currentFilter = '전체';
+let currentPostId = null;
+let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
+let posts = [];
+let events = [];
+
+const TAG_CLASSES = ['tag-0','tag-1','tag-2','tag-3','tag-4','tag-5'];
+function tagClass(subject){
+  const idx = subjects.indexOf(subject);
+  return TAG_CLASSES[idx % TAG_CLASSES.length] || 'tag-0';
+}
+
+/* ── Firebase 헬퍼 ── */
+function db(){ return window._db; }
+function fs(){ return window._fs; }
+
+/* ── 앱 초기화 ── */
+window._appInit = function() {
+  renderAllSubjectSelects();
+  renderBoardFilter();
+  renderCalendar();
+  listenPosts();
+  listenEvents();
+};
+
+/* ── Firestore 실시간 리스너 ── */
+function listenPosts() {
+  const q = fs().query(fs().collection(db(), 'posts'), fs().orderBy('date', 'desc'));
+  fs().onSnapshot(q, (snapshot) => {
+    posts = snapshot.docs.map(d => ({ id: d.id, ...d.data(), comments: d.data().comments || [] }));
+    renderPosts();
+    // 열린 게시글이 있으면 댓글도 갱신
+    if (currentPostId) {
+      const p = posts.find(x => x.id === currentPostId);
+      if (p) renderComments(p);
+    }
+  });
+}
+
+function listenEvents() {
+  const q = fs().query(fs().collection(db(), 'events'), fs().orderBy('date', 'asc'));
+  fs().onSnapshot(q, (snapshot) => {
+    events = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderCalendar();
+  });
+}
+
+/* ── 탭 ── */
+function showPage(p,btn){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  btn.classList.add('active');
+  if(p==='calendar') renderCalendar();
+  if(p==='board'){closePost();renderPosts();}
+  if(p==='admin') renderAdminPanel();
+}
+
+/* ── 관리자 ── */
+function doAdminLogin(){
+  const pw = document.getElementById('admin-pw-input').value;
+  if(pw === adminPw){
+    isAdmin = true;
+    document.getElementById('admin-login-area').style.display='none';
+    document.getElementById('admin-panel-area').style.display='block';
+    applyAdminUI();
+    renderSubjectChips();
+  } else {
+    document.getElementById('admin-login-msg').innerHTML='<div class="alert alert-error">비밀번호가 틀렸습니다.</div>';
+  }
+}
+function doAdminLogout(){
+  isAdmin = false;
+  document.getElementById('admin-panel-area').style.display='none';
+  document.getElementById('admin-login-area').style.display='block';
+  document.getElementById('admin-pw-input').value='';
+  document.getElementById('admin-login-msg').innerHTML='';
+  applyAdminUI();
+}
+function changeAdminPw(){
+  const p1=document.getElementById('new-pw1').value.trim();
+  const p2=document.getElementById('new-pw2').value.trim();
+  const msg=document.getElementById('pw-change-msg');
+  if(!p1){msg.innerHTML='<div class="alert alert-error">비밀번호를 입력하세요.</div>';return;}
+  if(p1!==p2){msg.innerHTML='<div class="alert alert-error">비밀번호가 일치하지 않습니다.</div>';return;}
+  adminPw=p1;
+  document.getElementById('new-pw1').value='';document.getElementById('new-pw2').value='';
+  msg.innerHTML='<div class="alert alert-success">비밀번호가 변경되었습니다.</div>';
+}
+function applyAdminUI(){
+  // 게시판
+  document.getElementById('board-admin-badge').style.display=isAdmin?'inline':'none';
+  document.getElementById('btn-write-post').style.display=isAdmin?'inline-flex':'none';
+  // 달력
+  document.getElementById('cal-admin-badge').style.display=isAdmin?'inline':'none';
+  document.getElementById('btn-add-event').style.display=isAdmin?'inline-flex':'none';
+  renderPosts();
+  renderCalendar();
+}
+
+/* ── 과목 관리 ── */
+function renderSubjectChips(){
+  const wrap=document.getElementById('subject-chips');
+  wrap.innerHTML=subjects.map((s,i)=>`<span class="subject-chip"><span class="subject-tag ${TAG_CLASSES[i%TAG_CLASSES.length]}">${s}</span><button class="chip-del" onclick="removeSubject(${i})" ${s==='전체'?'disabled style="opacity:.3"':''}>✕</button></span>`).join('');
+}
+function addSubject(){
+  const v=document.getElementById('new-subject-input').value.trim();
+  if(!v){alert('과목명을 입력하세요.');return;}
+  if(subjects.includes(v)){alert('이미 존재하는 과목입니다.');return;}
+  subjects.push(v);
+  document.getElementById('new-subject-input').value='';
+  renderSubjectChips();
+  renderAllSubjectSelects();
+  renderBoardFilter();
+}
+function removeSubject(idx){
+  if(subjects[idx]==='전체'){return;}
+  if(!confirm(`"${subjects[idx]}" 과목을 삭제할까요?`)) return;
+  subjects.splice(idx,1);
+  renderSubjectChips();
+  renderAllSubjectSelects();
+  renderBoardFilter();
+}
+function renderAllSubjectSelects(){
+  ['w-subject','ev-subject'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(!sel) return;
+    const cur=sel.value;
+    sel.innerHTML=subjects.map(s=>`<option value="${s}">${s}</option>`).join('');
+    if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
+  });
+}
+function renderBoardFilter(){
+  const wrap=document.getElementById('board-filter');
+  wrap.innerHTML=subjects.map(s=>`<button class="filter-btn${s===currentFilter?' active':''}" onclick="filterBoard('${s}',this)">${s}</button>`).join('');
+}
+
+/* ── 게시판 ── */
+function renderPosts(){
+  renderBoardFilter();
+  const list=document.getElementById('post-list');
+  let filtered=currentFilter==='전체'?posts:posts.filter(p=>p.subject===currentFilter||p.subject==='전체');
+  const notices=filtered.filter(p=>p.isNotice).slice().reverse();
+  const others=filtered.filter(p=>!p.isNotice).slice().reverse();
+  list.innerHTML='';
+  [...notices,...others].forEach(p=>{
+    const li=document.createElement('li');
+    li.className='post-item'+(p.isNotice?' post-notice':'');
+    const tc=tagClass(p.subject);
+    const delBtn=isAdmin?`<button class="btn btn-danger" onclick="event.stopPropagation();deletePost(${p.id})">삭제</button>`:'';
+    li.innerHTML=`<span class="badge ${p.isNotice?'badge-notice':'badge-qna'}">${p.isNotice?'📌 공지':'Q&A'}</span>${p.subject&&p.subject!=='전체'?`<span class="subject-tag ${tc}">${p.subject}</span>`:''}<span class="post-title">${p.title}</span><span class="post-meta">${p.author} · ${p.date}</span>${delBtn}`;
+    li.onclick=()=>openPost(p.id);
+    list.appendChild(li);
+  });
+  if(!list.children.length) list.innerHTML='<li style="padding:16px 0;color:var(--muted);font-size:13px;text-align:center">글이 없습니다.</li>';
+}
+function filterBoard(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPosts();
+}
+function toggleWrite(type){
+  const f=document.getElementById('write-form');
+  const noticeRow=document.getElementById('write-notice-row');
+  const pwRow=document.getElementById('w-pw-row');
+  if(f.style.display!=='none'&&f.dataset.type===type){f.style.display='none';return;}
+  f.dataset.type=type;
+  if(type==='post'){
+    noticeRow.style.display='block';
+    pwRow.style.display='none';
+    document.getElementById('w-name').value='선생님';
+  } else {
+    noticeRow.style.display='none';
+    pwRow.style.display='block';
+    document.getElementById('w-name').value='';
+  }
+  f.style.display='block';
+  renderAllSubjectSelects();
+}
+async function submitPost(){
+  const name=document.getElementById('w-name').value.trim();
+  const title=document.getElementById('w-title').value.trim();
+  const body=document.getElementById('w-body').value.trim();
+  const subject=document.getElementById('w-subject').value;
+  const isNotice=isAdmin&&document.getElementById('w-is-notice').checked;
+  if(!name||!title||!body){alert('닉네임, 제목, 내용을 모두 입력해주세요.');return;}
+  try {
+    await fs().addDoc(fs().collection(db(), 'posts'), {
+      title, author: name,
+      date: new Date().toISOString().slice(0,10),
+      subject, body, isNotice, comments: []
+    });
+    ['w-name','w-title','w-body'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('write-form').style.display='none';
+  } catch(e) { alert('저장 실패: ' + e.message); }
+}
+async function deletePost(id){
+  if(!isAdmin)return;
+  if(!confirm('이 글을 삭제할까요?'))return;
+  try {
+    await fs().deleteDoc(fs().doc(db(), 'posts', id));
+  } catch(e) { alert('삭제 실패: ' + e.message); }
+}
+function openPost(id){
+  currentPostId=id;
+  const p=posts.find(x=>x.id===id);
+  document.getElementById('board-list-area').style.display='none';
+  document.getElementById('write-form').style.display='none';
+  document.getElementById('post-detail').classList.add('show');
+  document.getElementById('detail-title').textContent=p.title;
+  document.getElementById('detail-author').textContent=p.author;
+  document.getElementById('detail-date').textContent=p.date;
+  document.getElementById('detail-badge').innerHTML=`<span class="badge ${p.isNotice?'badge-notice':'badge-qna'}">${p.isNotice?'공지':'Q&A'}</span>`;
+  const tc=tagClass(p.subject);
+  document.getElementById('detail-subject').innerHTML=p.subject&&p.subject!=='전체'?`<span class="subject-tag ${tc}">${p.subject}</span>`:'';
+  document.getElementById('detail-body').textContent=p.body;
+  document.getElementById('detail-del-btn').style.display=isAdmin?'inline-block':'none';
+  renderComments(p);
+}
+function closePost(){
+  currentPostId=null;
+  document.getElementById('board-list-area').style.display='block';
+  document.getElementById('post-detail').classList.remove('show');
+  renderPosts();
+}
+async function deleteCurrentPost(){
+  if(!isAdmin||!currentPostId)return;
+  if(!confirm('이 글을 삭제할까요?'))return;
+  try {
+    await fs().deleteDoc(fs().doc(db(), 'posts', currentPostId));
+    closePost();
+  } catch(e) { alert('삭제 실패: ' + e.message); }
+}
+function renderComments(p){
+  const cl=document.getElementById('comment-list');cl.innerHTML='';
+  p.comments.forEach((c,ci)=>{
+    const div=document.createElement('div');div.className='comment-item';
+    const delBtn=isAdmin?`<button class="btn btn-danger" onclick="deleteComment(${p.id},${ci})" style="font-size:10px;padding:2px 7px">삭제</button>`:'';
+    div.innerHTML=`<div class="comment-header"><span style="font-weight:500;color:var(--text)">${c.name}</span><div style="display:flex;gap:6px;align-items:center">${delBtn}<span>${c.date}</span></div></div><div class="comment-body">${c.text}</div>`;
+    cl.appendChild(div);
+  });
+}
+async function submitComment(){
+  const name=document.getElementById('c-name').value.trim();
+  const text=document.getElementById('c-body').value.trim();
+  if(!name||!text){alert('닉네임과 댓글 내용을 입력해주세요.');return;}
+  try {
+    const newComment = { name, text, date: new Date().toISOString().slice(0,10) };
+    await fs().updateDoc(fs().doc(db(), 'posts', currentPostId), {
+      comments: fs().arrayUnion(newComment)
+    });
+    document.getElementById('c-name').value='';
+    document.getElementById('c-body').value='';
+    // onSnapshot이 자동으로 renderComments 호출
+  } catch(e) { alert('댓글 저장 실패: ' + e.message); }
+}
+async function deleteComment(postId, ci){
+  if(!isAdmin)return;
+  const p = posts.find(x=>x.id===postId);
+  if(!p) return;
+  const commentToRemove = p.comments[ci];
+  try {
+    await fs().updateDoc(fs().doc(db(), 'posts', postId), {
+      comments: fs().arrayRemove(commentToRemove)
+    });
+  } catch(e) { alert('댓글 삭제 실패: ' + e.message); }
+}
+
+/* ── 달력 ── */
+function renderCalendar(){
+  document.getElementById('cal-month-label').textContent=`${calYear}.${String(calMonth+1).padStart(2,'0')}`;
+  const grid=document.getElementById('cal-grid');grid.innerHTML='';
+  ['일','월','화','수','목','금','토'].forEach(d=>{const el=document.createElement('div');el.className='cal-day-label';el.textContent=d;grid.appendChild(el);});
+  const first=new Date(calYear,calMonth,1).getDay();
+  const days=new Date(calYear,calMonth+1,0).getDate();
+  const today=new Date();
+  for(let i=0;i<first;i++){const el=document.createElement('div');el.className='cal-cell empty';grid.appendChild(el);}
+  for(let d=1;d<=days;d++){
+    const el=document.createElement('div');
+    const dow=(first+d-1)%7;
+    const iso=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayEv=events.filter(e=>e.date===iso);
+    let cls='cal-cell'+(dow===0?' sun':dow===6?' sat':'');
+    if(today.getFullYear()===calYear&&today.getMonth()===calMonth&&today.getDate()===d)cls+=' today';
+    if(dayEv.length)cls+=' has-event';
+    el.className=cls;
+    el.innerHTML=`<div class="cal-num">${d}</div>${dayEv.map(e=>`<div class="cal-event ${e.color||''}">${e.title}</div>`).join('')}`;
+    grid.appendChild(el);
+  }
+  const evList=document.getElementById('event-list');
+  const prefix=`${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+  const monthEv=events.filter(e=>e.date.startsWith(prefix)).sort((a,b)=>a.date.localeCompare(b.date));
+  const colors={'':'var(--accent)',green:'var(--green)',amber:'var(--amber)',red:'var(--red)',pink:'var(--pink)'};
+  evList.innerHTML=monthEv.length?monthEv.map(e=>{
+    const tc=tagClass(e.subject);
+    const delBtn=isAdmin?`<button class="btn btn-danger" onclick="deleteEvent(${e.id})" style="margin-left:auto;font-size:11px;padding:2px 8px">삭제</button>`:'';
+    return `<div class="event-item"><div class="event-dot" style="background:${colors[e.color||'']}"></div><span class="event-date">${e.date.slice(5)}</span>${e.subject&&e.subject!=='전체'?`<span class="subject-tag ${tc}" style="font-size:10px">${e.subject}</span>`:''}<span>${e.title}</span>${delBtn}</div>`;
+  }).join(''):'<div style="color:var(--muted);font-size:13px;padding:8px 0">이번 달 등록된 일정이 없습니다.</div>';
+}
+function changeMonth(d){calMonth+=d;if(calMonth<0){calMonth=11;calYear--;}if(calMonth>11){calMonth=0;calYear++;}renderCalendar();}
+function openEventModal(){if(!isAdmin){alert('관리자만 일정을 추가할 수 있습니다.');return;}document.getElementById('ev-date').value=new Date().toISOString().slice(0,10);renderAllSubjectSelects();document.getElementById('event-modal').classList.add('show');}
+function closeEventModal(){document.getElementById('event-modal').classList.remove('show');}
+async function addEvent(){
+  const date=document.getElementById('ev-date').value;
+  const title=document.getElementById('ev-title').value.trim();
+  const color=document.getElementById('ev-color').value;
+  const subject=document.getElementById('ev-subject').value||'전체';
+  if(!date||!title){alert('날짜와 제목을 입력하세요.');return;}
+  try {
+    await fs().addDoc(fs().collection(db(), 'events'), { date, title, color, subject });
+    document.getElementById('ev-title').value='';
+    closeEventModal();
+  } catch(e) { alert('저장 실패: ' + e.message); }
+}
+async function deleteEvent(id){
+  if(!isAdmin)return;
+  if(!confirm('이 일정을 삭제할까요?'))return;
+  try {
+    await fs().deleteDoc(fs().doc(db(), 'events', id));
+  } catch(e) { alert('삭제 실패: ' + e.message); }
+}
+
+/* ── 성적 ── */
+async function checkGrade(){
+  const id=document.getElementById('g-id').value.trim();
+  const pw=document.getElementById('g-pw').value.trim();
+  const alertEl=document.getElementById('g-alert');
+  const result=document.getElementById('grade-result');
+  if(!id||!pw){alertEl.innerHTML='<div class="alert alert-error">학번과 비밀번호를 입력하세요.</div>';return;}
+  const url=document.getElementById('sheet-url').value.trim();
+  if(url){
+    const btn=document.getElementById('grade-btn');
+    btn.disabled=true;btn.innerHTML='<span class="spinner"></span>조회 중...';
+    try{
+      const res=await fetch(`${url}?id=${encodeURIComponent(id)}&pw=${encodeURIComponent(pw)}`,{mode:'cors'});
+      const data=await res.json();
+      btn.disabled=false;btn.textContent='조회하기';
+      if(!data.ok){alertEl.innerHTML='<div class="alert alert-error">학번 또는 비밀번호가 일치하지 않습니다.</div>';result.style.display='none';return;}
+      alertEl.innerHTML='';showGradeResult(data.name,data.subject,data.scores);
+    }catch(e){btn.disabled=false;btn.textContent='조회하기';alertEl.innerHTML='<div class="alert alert-error">서버 연결 실패. URL을 확인하세요.</div>';}
+    return;
+  }
+  const DEMO=[
+    {id:"30101",pw:"1234",name:"김민준",subject:"프로그래밍",scores:[{label:"수행①",score:23,total:25},{label:"수행②",score:22,total:25},{label:"1차 지필",score:88,total:100}]},
+    {id:"30102",pw:"2345",name:"이서연",subject:"프로그래밍",scores:[{label:"수행①",score:25,total:25},{label:"수행②",score:24,total:25},{label:"1차 지필",score:94,total:100}]},
+  ];
+  const s=DEMO.find(x=>x.id===id&&x.pw===pw);
+  if(!s){alertEl.innerHTML='<div class="alert alert-error">일치하는 정보가 없습니다.<br><small style="color:var(--muted)">데모: 30101 / 1234</small></div>';result.style.display='none';return;}
+  alertEl.innerHTML='<div class="alert alert-info">⚠️ 데모 모드 — 구글 시트 연결 후 실제 데이터 조회</div>';
+  showGradeResult(s.name,s.subject,s.scores);
+}
+function showGradeResult(name,subject,scores){
+  const tc=tagClass(subject);
+  document.getElementById('grade-name-row').innerHTML=`${name} 학생 &nbsp;<span class="subject-tag ${tc}">${subject||''}</span>`;
+  const total=scores.reduce((s,r)=>s+r.score,0);
+  const max=scores.reduce((s,r)=>s+r.total,0);
+  const pct=Math.round(total/max*100);
+  document.getElementById('grade-sections').innerHTML=`<table class="grade-table">
+    <tr><th>항목</th><th>점수</th><th>만점</th><th>비율</th></tr>
+    ${scores.map(r=>{const p=Math.round(r.score/r.total*100);const c=p>=90?'high':p>=70?'mid':'low';return`<tr><td>${r.label}</td><td class="grade-score ${c}">${r.score}</td><td style="color:var(--muted)">${r.total}</td><td><span class="grade-rank">${p}%</span></td></tr>`;}).join('')}
+    <tr style="font-weight:600"><td>합계</td><td class="grade-score ${pct>=90?'high':pct>=70?'mid':'low'}">${total}</td><td style="color:var(--muted)">${max}</td><td><span class="grade-rank">${pct}%</span></td></tr>
+  </table>`;
+  document.getElementById('grade-result').style.display='block';
+  document.getElementById('grade-result').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function logoutGrade(){document.getElementById('grade-result').style.display='none';document.getElementById('g-id').value='';document.getElementById('g-pw').value='';document.getElementById('g-alert').innerHTML='';}
+async function testSheetConnection(){
+  const url=document.getElementById('sheet-url').value.trim();
+  if(!url){alert('URL을 입력하세요.');return;}
+  const dot=document.getElementById('conn-dot');const status=document.getElementById('conn-status');
+  dot.className='status-dot status-wait';status.innerHTML='<span class="spinner"></span>연결 테스트 중...';
+  try{await fetch(`${url}?id=test&pw=test`,{mode:'cors'});dot.className='status-dot status-ok';status.textContent='연결 성공!';}
+  catch(e){dot.className='status-dot status-err';status.textContent='연결 실패 — URL 또는 배포 설정 확인';}
+}
+function toggleHint(){const h=document.getElementById('sheet-hint');h.style.display=h.style.display==='none'?'block':'none';}
+
+/* ── 관리자 패널 렌더 ── */
+function renderAdminPanel(){
+  if(isAdmin){
+    document.getElementById('admin-login-area').style.display='none';
+    document.getElementById('admin-panel-area').style.display='block';
+    renderSubjectChips();
+  } else {
+    document.getElementById('admin-login-area').style.display='block';
+    document.getElementById('admin-panel-area').style.display='none';
+  }
+}
+
+// Firebase 로드 후 _appInit()에서 초기화됩니다
+</script>
