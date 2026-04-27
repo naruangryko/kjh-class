@@ -616,7 +616,7 @@ function renderPosts(){
     const li=document.createElement('li');
     li.className='post-item'+(p.isNotice?' post-notice':'');
     const tc=tagClass(p.subject);
-    const delBtn=isAdmin?`<button class="btn btn-danger" onclick="event.stopPropagation();deletePost(${p.id})">삭제</button>`:'';
+    const delBtn=isAdmin?`<button class="btn btn-danger" onclick="event.stopPropagation();deletePost('${p.id}')">삭제</button>`:'';
     li.innerHTML=`<span class="badge ${p.isNotice?'badge-notice':'badge-qna'}">${p.isNotice?'📌 공지':'Q&A'}</span>${p.subject&&p.subject!=='전체'?`<span class="subject-tag ${tc}">${p.subject}</span>`:''}<span class="post-title">${p.title}</span><span class="post-meta">${p.author} · ${p.date}</span>${delBtn}`;
     li.onclick=()=>openPost(p.id);
     list.appendChild(li);
@@ -705,7 +705,7 @@ function renderComments(p){
   const cl=document.getElementById('comment-list');cl.innerHTML='';
   p.comments.forEach((c,ci)=>{
     const div=document.createElement('div');div.className='comment-item';
-    const delBtn=isAdmin?`<button class="btn btn-danger" onclick="deleteComment(${p.id},${ci})" style="font-size:10px;padding:2px 7px">삭제</button>`:'';
+    const delBtn=isAdmin?`<button class="btn btn-danger" onclick="deleteComment('${p.id}',${ci})" style="font-size:10px;padding:2px 7px">삭제</button>`:'';
     div.innerHTML=`<div class="comment-header"><span style="font-weight:500;color:var(--text)">${c.name}</span><div style="display:flex;gap:6px;align-items:center">${delBtn}<span>${c.date}</span></div></div><div class="comment-body">${c.text}</div>`;
     cl.appendChild(div);
   });
@@ -763,7 +763,7 @@ function renderCalendar(){
   const colors={'':'var(--accent)',green:'var(--green)',amber:'var(--amber)',red:'var(--red)',pink:'var(--pink)'};
   evList.innerHTML=monthEv.length?monthEv.map(e=>{
     const tc=tagClass(e.subject);
-    const delBtn=isAdmin?`<button class="btn btn-danger" onclick="deleteEvent(${e.id})" style="margin-left:auto;font-size:11px;padding:2px 8px">삭제</button>`:'';
+    const delBtn=isAdmin?`<button class="btn btn-danger" onclick="deleteEvent('${e.id}')" style="margin-left:auto;font-size:11px;padding:2px 8px">삭제</button>`:'';
     return `<div class="event-item"><div class="event-dot" style="background:${colors[e.color||'']}"></div><span class="event-date">${e.date.slice(5)}</span>${e.subject&&e.subject!=='전체'?`<span class="subject-tag ${tc}" style="font-size:10px">${e.subject}</span>`:''}<span>${e.title}</span>${delBtn}</div>`;
   }).join(''):'<div style="color:var(--muted);font-size:13px;padding:8px 0">이번 달 등록된 일정이 없습니다.</div>';
 }
